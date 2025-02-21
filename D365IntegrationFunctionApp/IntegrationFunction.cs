@@ -1,15 +1,13 @@
+using Azure.Messaging.ServiceBus;
 using D365IntegrationFunctionApp.IServices;
 using D365IntegrationFunctionApp.Models;
 using D365IntegrationFunctionApp.Services;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.Extensions.Logging;
-using Renci.SshNet;
-using Renci.SshNet.Common;
 using System;
 using System.IO;
 using System.Net.Http;
-using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 
@@ -30,18 +28,13 @@ namespace D365IntegrationFunctionApp
         }
 
         [Function("D365IntegrationFunction")]
-        public async Task Run([HttpTrigger(AuthorizationLevel.Function, "get", "post")] HttpRequestData req)
+        public async Task Run([ServiceBusTrigger("queue", Connection = "ServiceBusConnection")] ServiceBusReceivedMessage message)
         {
             _logger.LogInformation($"Function executed at: {DateTime.Now}");
             try
             {
-                // Fetch JSON data fromhttp request body
-                StreamReader reader = new StreamReader(req.Body);
-                var jsonData = await reader.ReadToEndAsync();
-                _logger.LogInformation($"Ready for dispatch event json received at: {DateTime.Now}");
-
                 // Deserialize json to .net object
-                SalesOrder salesOrder = JsonSerializer.Deserialize<SalesOrder>(jsonData);
+                SalesOrder salesOrder = JsonSerializer.Deserialize<SalesOrder>(message.ToString());
                 _logger.LogInformation($"Ready for dispatch event json deserialized at: {DateTime.Now}");
 
                 // Container conversion
